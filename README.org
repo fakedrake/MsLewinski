@@ -1,2 +1,21 @@
 * MsLewinski
   Synchronize eclass deadlines with google calendar.
+
+** Dependencies
+   This script is dependent on a couple of packages. If you use pip
+   you will need:
+
+   #+BEGIN_EXAMPLE
+$ sudo pip install gdata.calendar.data \
+   gdata.calendar.client \
+   BeautifulSoup \
+   mechanize
+   #+END_EXAMPLE
+
+** Usage
+   It is quite simple really. Use =--eclass= and =--google= to provide
+   eclass and google credentials in the form =username:password= and
+   =email:password= respectively. See =--help= too. The default
+   calendar is always used. I may add support for other calendars
+   aswell later. The default eclass url is upatras. Edit the
+   ECLASS_URL variable at the top of the script to change that.

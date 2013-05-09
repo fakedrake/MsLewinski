@@ -6,11 +6,10 @@ import gdata.calendar.client
 from BeautifulSoup import BeautifulSoup, Tag
 import mechanize
 
-CREDS = {'uname':'ece7361', 'pass':''}
+
 ECLASS_URL = "https://eclass.upatras.gr"
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 GOOGLE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S+03:00"
-AUTHENTICATION = {'uname': 'eclass.to.calendar@gmail.com', 'pass': '123!@#abc'}
 SUBMITTED_STRING = "[SUBMITTED]"
 
 def contains_a(soup, tag, attr=None):
@@ -24,7 +23,7 @@ def contains_a(soup, tag, attr=None):
     return False
 
 
-def clear_events(authentication=AUTHENTICATION):
+def clear_events(authentication):
     client = gdata.calendar.client.CalendarClient(source='fakedrake-eclasscalendar')
 
     if isinstance(authentication, dict):
@@ -49,7 +48,7 @@ class Subject(object):
         self.title = html.contents[0].text
         self.deadlines = []
 
-    def calendar_sync(self, authentication=AUTHENTICATION):
+    def calendar_sync(self, authentication):
         """Upload all unuploaded events."""
 
         for d in self.deadlines:
@@ -107,7 +106,7 @@ class Deadline(object):
             event.title.text = SUBMITTED_STRING + old_title
             client.Update(event)
 
-    def maybe_upload(self, authentication=AUTHENTICATION):
+    def maybe_upload(self, authentication):
         """If not already uploaded upload the deadline."""
         client = gdata.calendar.client.CalendarClient(source='fakedrake-eclasscalendar')
 
@@ -144,7 +143,7 @@ class Eclass(object):
     """ Interaction with eclass.
     """
 
-    def __init__(self, url=ECLASS_URL, creds=CREDS):
+    def __init__(self, creds, url=ECLASS_URL):
         """ Set the url and credentials.
 	"""
         self.url = url
@@ -158,7 +157,7 @@ class Eclass(object):
         br.open(self.url)
         br.select_form(nr=2)
 
-        for k,v in CREDS.iteritems():
+        for k,v in self.creds.iteritems():
             br[k] = v
 
         response = br.submit()
@@ -166,8 +165,10 @@ class Eclass(object):
 
     def _deadlines_html(self):
         """The deadlines box."""
-
-        return [l for l in self._login_html().split("\n") if l.find("Deadline") > 0][0]
+        try:
+            return [l for l in self._login_html().split("\n") if l.find("Deadline") > 0][0]
+        except IndexError:
+            raise ValueError("Wrong eclass credentials %s." % self.creds)
 
 
     def subjects(self):
@@ -185,8 +186,16 @@ class Eclass(object):
         return ret
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='Sync eclass with gcalendar.')
+    parser.add_argument('--eclass', help='eclass credentials in the form USERNAME:PASSWORD')
+    parser.add_argument('--google', help='google credentials in the form GOOGLE_ID@gmail.com:PASSWORD')
+    args = parser.parse_args()
 
-    eclass = Eclass()
+    eclass_creds = dict(zip(['uname', 'pass'], args.eclass.split(":")))
+    google_creds = dict(zip(['uname', 'pass'], args.google.split(":")))
+
+    eclass = Eclass(creds=eclass_creds)
     subjects = eclass.subjects()
 
     for s in subjects:
@@ -194,4 +203,4 @@ if __name__ == "__main__":
         for d in s.deadlines:
             print "\t",d.title, ":", d.datetime()
 
-        s.calendar_sync()
+        s.calendar_sync(google_creds)
