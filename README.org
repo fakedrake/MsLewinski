@@ -1,0 +1,2 @@
+* MsLewinski
+  Synchronize eclass deadlines with google calendar.
